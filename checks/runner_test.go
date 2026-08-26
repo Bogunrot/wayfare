@@ -147,11 +147,23 @@ func TestRunnerDefaultsApplyWhenNoChecksSupplied(t *testing.T) {
 	}
 }
 
+// countingTransport records how many requests passed through it, so a test
+// can assert that the runner resolved the anchor exactly once.
+type countingTransport struct {
+	recordedTransport
+	calls int
+}
+
+func (c *countingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	c.calls++
+	return c.recordedTransport.RoundTrip(req)
+}
+
 // TestRunnerResolvesProfileOnce covers the reason the Runner exists: the
 // anchor's stellar.toml is resolved once per corridor, and every check sees
 // the same profile in its subject instead of fetching it themselves.
 func TestRunnerResolvesProfileOnce(t *testing.T) {
-	responses := recordedTransport{
+	responses := &countingTransport{recordedTransport: recordedTransport{
 		http.MethodGet + " https://ngnc.online/.well-known/stellar.toml": recordedResponse{
 			body: `NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
 [[CURRENCIES]]
@@ -160,7 +172,7 @@ issuer="GASBV6W7GGED66MXEVC7YZHTWWYMSVYEY35USF2HJZBLABLYIFQGXZY6"
 status="live"
 anchor_asset="NGN"
 `},
-	}
+	}}
 
 	var saw []Subject
 	r := &Runner{
@@ -185,6 +197,11 @@ anchor_asset="NGN"
 	}
 	if len(f.Checks) != 1 {
 		t.Errorf("runner produced %d results, want 1", len(f.Checks))
+	}
+	if responses.calls != 1 {
+		t.Errorf("the stellar.toml was fetched %d times, want exactly once "+
+			"— the runner's whole purpose is to resolve the anchor once per corridor",
+			responses.calls)
 	}
 }
 

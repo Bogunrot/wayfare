@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Wayfare-labs/wayfare/anchor"
 	"github.com/Wayfare-labs/wayfare/asset"
 )
 
@@ -42,6 +43,13 @@ func (f checkFunc) Run(ctx context.Context, s Subject) CheckResult { return f(ct
 // the caller's copy must be untouched afterwards — a check cannot rewrite the
 // integrity classification or the underlying pair of the corridor it is
 // qualifying.
+//
+// The boundary is drawn precisely: the headline and identity fields are
+// value-isolated. Subject.Profile is the one pointer-owned field, and it is
+// deliberately *not* deep-copied per check — the sweep resolves the anchor
+// once and hands the same document to every check to read. The test mutates
+// through the pointer to prove that boundary is real and documented, so a
+// future deep-copy change is a deliberate act rather than an accident.
 func TestSubjectHeadlineIsImmutable(t *testing.T) {
 	// sabotage mutates its subject and then fails loudly.
 	sabotage := checkFunc(func(_ context.Context, s Subject) CheckResult {
@@ -50,7 +58,11 @@ func TestSubjectHeadlineIsImmutable(t *testing.T) {
 		s.Send = asset.NGNC()
 		s.Asset = asset.GHSC()
 		s.Domain = "rewritten.example"
-		s.Profile = nil
+		// Pointer-owned data is shared context, not value-isolated: this
+		// mutation reaches the caller by design (see the doc comment on
+		// Subject.Profile), which is why checks must treat the profile as
+		// read-only.
+		s.Profile.Domain = "mutated.example"
 		return Fail(Descriptor{ID: "test.sabotage"}, s, "tried to rewrite the headline")
 	})
 
@@ -61,6 +73,7 @@ func TestSubjectHeadlineIsImmutable(t *testing.T) {
 		Receive:    asset.GHSC(),
 		Integrity:  "DERIVATIVE",
 		Underlying: asset.NGNC(),
+		Profile:    &anchor.Profile{Domain: "anchor.example"},
 	}
 
 	before := original
@@ -75,6 +88,16 @@ func TestSubjectHeadlineIsImmutable(t *testing.T) {
 	}
 	if original.Integrity != "DERIVATIVE" {
 		t.Errorf("Integrity = %q, want the caller's original value", original.Integrity)
+	}
+	if original.Domain != "anchor.example" {
+		t.Errorf("Domain = %q, want the caller's original value", original.Domain)
+	}
+	// The shared-profile boundary, asserted rather than assumed: the value
+	// fields above are isolated, and the profile pointer is shared.
+	if original.Profile.Domain != "mutated.example" {
+		t.Error("the profile pointer was not shared with the check; if this " +
+			"passes because Run deep-copies profiles, update this test and the " +
+			"Subject.Profile doc comment deliberately")
 	}
 }
 
