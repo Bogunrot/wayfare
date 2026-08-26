@@ -90,7 +90,9 @@ corridor.**
 Keep using `https://horizon.stellar.org` exactly as today.
 
 - **Cost:** zero today. The cadence in `docs/deployment.md` (~110 requests
-  per sweep, three dozen per corridor) is negligible for a public instance.
+  per sweep, three dozen per corridor) is a planning estimate recorded there
+  without an observation date — an order-of-magnitude figure, not a
+  measurement — and is negligible for a public instance.
 - **Risk:** the dependency sits on a service SDF has formally flagged for
   eventual deprecation. No feature development, and an announced shutdown
   would arrive with *some* notice — but the entire pricing engine dies the
@@ -150,11 +152,14 @@ Build and run the pathfinding service ourselves.
   compute, and continuous operation runs **~$160/month** for compute and
   storage. Then the pathfinding engine itself: maintain offer state and pool
   reserves from ledger data, run the search, keep it correct as the protocol
-  evolves.
+  evolves. Note the scope of the cited figure: **~$160/month is the Galexie
+  continuous-export baseline** (compute + storage, per SDF's announcement) —
+  the pathfinder itself, live order-book/pool state maintenance, database,
+  monitoring and production operations are additional and unquantified here.
 - **Risk:** a second product, with a correctness bar that is already
   demonstrated to be hard. Estimated effort is months of engineering plus
-  permanent maintenance; that is the real cost, and the dollar figures above
-  are the small part of it.
+  permanent maintenance; that is the real cost, and the Galexie baseline
+  above is the small part of it.
 - **What is lost:** nothing, *if* pool state is maintained and the full path
   set is searched — but only if. An order-book-only implementation loses AMM
   routing and is already known to be wrong on this corridor.
@@ -187,7 +192,7 @@ announced — or never, if none is.
 | A — SDF Horizon (today) | ✅ | ✅ | zero | already live |
 | B — third-party Horizon host | ✅ | ✅ | per-request fees | days |
 | C — third-party indexers | ❌ unless rebuilt | ❌ unless rebuilt | rebuild + subscription | months |
-| D — self-hosted book + AMM state | ✅ if pools tracked | ✅ if full search | months of engineering + ~$160/mo ops | months |
+| D — self-hosted book + AMM state | ✅ if pools tracked | ✅ if full search | months of engineering + ~$160/mo Galexie baseline (pathfinder, DB, monitoring additional, unquantified) | months |
 | E — hybrid (A + seam) | ✅ | ✅ | one small refactor | days |
 
 The AMM row is the one that eliminates options on its own. It is not a
@@ -223,10 +228,17 @@ must be reproduced, nothing more. The same treatment can be applied to
 
 Why this shape:
 
-- **The full path set is in the signature.** `StrictSendPaths` returns
-  `[]dex.Path`, so any implementation must reproduce the input to
-  `classify`. A "best path only" replacement cannot silently implement this
-  interface; it would fail to compile, which is exactly what a seam is for.
+- **The full path set is a semantic contract, not a compile-time one.**
+  `StrictSendPaths` returns `[]dex.Path`, and `route` passes that slice
+  whole to `classify` — but nothing in the type forces an implementation to
+  return *every* path. A "best path only" implementation would compile, and
+  would silently change DIRECT / DERIVATIVE / NO-MARKET verdicts. Completeness
+  must therefore be verified, not assumed: a conformance test over a fixture
+  holding multiple valid paths (including an AMM-routed and a native-hop
+  case) must assert the replacement returns all of them, alongside the
+  existing recorded-snapshot integrity tests that already pin full-set
+  classification against real bytes. The interface is what makes that test
+  enforceable for any future implementer.
 - **Slippage is part of the contract.** `MeasureSlippage` is two
   pathfinding calls with a probe, so a replacement must handle the
   size-dependence pricing the engine already warns about.
@@ -234,10 +246,11 @@ Why this shape:
   type satisfying it, so the interface is a statement of the current
   contract, not speculative generality.
 
-Cost: a few hours including test updates (the existing tests construct
-`&dex.Client{...}` and keep working unchanged because the concrete type
-still satisfies the interface). **This is the entire scope of the immediate
-work** — defer the decision without forgetting it.
+Cost: a few hours including test updates — an unvalidated estimate, with no
+observation basis beyond the size of the change itself. (The existing tests
+construct `&dex.Client{...}` and keep working unchanged because the concrete
+type still satisfies the interface.) **This is the entire scope of the
+immediate work** — defer the decision without forgetting it.
 
 ---
 
