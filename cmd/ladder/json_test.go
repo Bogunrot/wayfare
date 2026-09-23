@@ -80,7 +80,7 @@ func sampleLadderResult() *route.LadderResult {
 							Determined: true,
 						},
 						{
-							Component:  route.CostFees,
+							Component:  route.CostNetworkFees,
 							Determined: false,
 							Reason:     "network fee not measured",
 						},

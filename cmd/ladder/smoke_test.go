@@ -241,7 +241,7 @@ func TestGitRevisionNonEmpty(t *testing.T) {
 
 func TestDirtyFilesReturnsSlice(t *testing.T) {
 	// dirtyFiles should not panic, regardless of whether the tree is clean
-	files, err := dirtyFiles()
+	files, err := dirtyFiles(".")
 	if err != nil {
 		// Not in a git repo is acceptable
 		t.Skipf("dirtyFiles error (may not be in a git repo): %v", err)
@@ -255,7 +255,7 @@ func TestDirtyFilesReturnsSlice(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRequireCleanTreeAllowDirtyAlwaysReturnsNil(t *testing.T) {
-	dirty, err := requireCleanTree(true)
+	dirty, err := requireCleanTree(".", true)
 	if err != nil {
 		t.Fatalf("requireCleanTree(allowDirty=true): %v", err)
 	}

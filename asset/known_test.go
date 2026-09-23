@@ -1,6 +1,8 @@
 package asset
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -169,6 +171,16 @@ func TestValidateEntryRequiresVerificationDate(t *testing.T) {
 		Status:     "live",
 		SourceURL:  "https://example.com/.well-known/stellar.toml",
 		HomeDomain: "example.com",
+	}
+	err := ValidateEntry(e)
+	if err == nil {
+		t.Fatal("expected error for a missing verification date, got nil")
+	}
+	if !strings.Contains(err.Error(), "verification date is required") {
+		t.Errorf("error = %q, want it to name the missing verification date", err)
+	}
+}
+
 // TestHalfRegisteredEntryFails tests that ValidateEntry fails loudly when
 // any required field is missing from a registration entry, preventing
 // silent misclassification of corridor assets.
@@ -359,11 +371,10 @@ func TestLookupEntry(t *testing.T) {
 	if _, ok := LookupEntryByCode("UNKNOWN"); ok {
 		t.Error("LookupEntryByCode(\"UNKNOWN\") must return false")
 	}
-	err := ValidateEntry(e)
-	if err == nil {
-		"expected validation error for missing verification date" // wait, error check below
+	if _, ok := LookupEntry(Native()); ok {
+		t.Error("LookupEntry(Native()) must return false")
 	}
-	if err == nil {
-		t.Fatal("expected error for missing verification date, got nil")
+	if _, ok := LookupEntry(Fiat("NGN")); ok {
+		t.Error("LookupEntry(Fiat(\"NGN\")) must return false")
 	}
 }

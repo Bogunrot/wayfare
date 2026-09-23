@@ -128,7 +128,7 @@ func (s *Server) handleCorridor(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusMethodNotAllowed, codeMethodNotAllowed, "only GET is supported")
 		return
 	}
-	if err := checkParams(r, "from", "to", "sizes", "live"); err != nil {
+	if err := checkParams(r, "from", "to", "sizes", "live", "pretty"); err != nil {
 		writeError(w, r, http.StatusBadRequest, codeInvalidQuery, err.Error())
 		return
 	}
@@ -268,9 +268,17 @@ func (s *Server) handleCorridor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAssets(w http.ResponseWriter, r *http.Request) {
-	if err := checkParams(r); err != nil {
+	if err := checkParams(r, "pretty"); err != nil {
 		writeError(w, r, http.StatusBadRequest, codeInvalidQuery, err.Error())
 		return
+	}
+	// corridorState is the pricing history for a receive asset. The UI needs
+	// this to build a corridor selector that reflects what has actually been
+	// measured rather than what is theoretically possible.
+	type corridorState struct {
+		HasHistory    bool   `json:"has_history"`
+		LastIntegrity string `json:"last_integrity,omitempty"`
+		LastMeasured  string `json:"last_measured,omitempty"`
 	}
 	type entry struct {
 		route.AssetJSON
@@ -330,12 +338,62 @@ func (s *Server) handleAssets(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, r, http.StatusOK, map[string]any{"assets": out})
 }
 
+// healthData reports how old the newest stored run is for every corridor with
+// history, or nil when no history is configured or the store is empty.
+//
+// On a -history-first deployment the thing at risk is not whether the process
+// is up but whether the data it serves has gone stale, so /healthz answers that
+// question rather than only reporting liveness. A corridor with no stored run is
+// omitted rather than reported as fresh: an unavailable age is unknown, never a
+// fabricated zero or "now".
+func (s *Server) healthData(ctx context.Context) map[string]healthCorridorJSON {
+	if s.Store == nil {
+		return nil
+	}
+	corridors, err := s.Store.Corridors(ctx)
+	if err != nil || len(corridors) == 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	out := make(map[string]healthCorridorJSON, len(corridors))
+	for _, c := range corridors {
+		rec, err := s.Store.Latest(ctx, c)
+		if err != nil || rec == nil {
+			continue
+		}
+		age := now.Sub(rec.RecordedAt.UTC())
+		if age < 0 {
+			age = 0
+		}
+		out[c] = healthCorridorJSON{
+			RecordedAt: rec.RecordedAt.UTC().Format(time.RFC3339),
+			AgeSeconds: int64(age.Seconds()),
+			AgeHuman:   humanAge(age),
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// healthCorridorJSON is one corridor's newest stored run, as reported on
+// /healthz.
+type healthCorridorJSON struct {
+	RecordedAt string `json:"recorded_at"`
+	AgeSeconds int64  `json:"age_seconds"`
+	AgeHuman   string `json:"age_human"`
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if err := checkParams(r); err != nil {
+	if err := checkParams(r, "pretty"); err != nil {
 		writeError(w, r, http.StatusBadRequest, codeInvalidQuery, err.Error())
 		return
 	}
-	writeJSON(w, r, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, r, http.StatusOK, map[string]any{
+		"status": "ok",
+		"data":   s.healthData(r.Context()),
+	})
 }
 
 // helpers --------------------------------------------------------------------

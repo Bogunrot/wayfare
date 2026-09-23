@@ -25,11 +25,11 @@ import (
 // proceed on fabricated pricing.
 func TestGetPriceRejectsMalformedJSON(t *testing.T) {
 	cases := map[string]string{
-		"truncated object":   `{"price": "5.00", "sell_amount":`,
-		"not json":           `not json at all`,
-		"price wrong type":   `{"price": 5.00}`, // number where a string is expected
-		"array not object":   `["price", "5.00"]`,
-		"trailing garbage":   `{"price":"5.00"} and then some`,
+		"truncated object": `{"price": "5.00", "sell_amount":`,
+		"not json":         `not json at all`,
+		"price wrong type": `{"price": 5.00}`, // number where a string is expected
+		"array not object": `["price", "5.00"]`,
+		"trailing garbage": `{"price":"5.00"} and then some`,
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -83,9 +83,9 @@ func TestGetPriceTimeoutReturnsError(t *testing.T) {
 // fabricate a zero-valued quote and present it as a real price.
 func TestGetPriceRejectsEmptyResponse(t *testing.T) {
 	cases := map[string]string{
-		"empty body":       ``,
-		"empty object":     `{}`,
-		"whitespace only":  "   \n\t ",
+		"empty body":      ``,
+		"empty object":    `{}`,
+		"whitespace only": "   \n\t ",
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -113,8 +113,8 @@ func TestGetPriceRejectsEmptyResponse(t *testing.T) {
 func TestGetPriceRejectsMissingRequiredFields(t *testing.T) {
 	cases := map[string]string{
 		"no price field":     `{"sell_amount":"542","buy_amount":"100","fee":{"total":"42","asset":"iso4217:BRL"}}`,
-		"empty price string":  `{"price":"","sell_amount":"542","buy_amount":"100"}`,
-		"fee only":            `{"fee":{"total":"42","asset":"iso4217:BRL"}}`,
+		"empty price string": `{"price":"","sell_amount":"542","buy_amount":"100"}`,
+		"fee only":           `{"fee":{"total":"42","asset":"iso4217:BRL"}}`,
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {

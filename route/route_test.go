@@ -807,6 +807,9 @@ func TestRecordedMalformedPayloadsReportUnknown(t *testing.T) {
 					res.Notes, tc.reason)
 			}
 		})
+	}
+}
+
 // TestUnknownOnlyPathIsTheDocumentedFalseNegative pins the bounded
 // false-negative written down in asset/known.go: a corridor whose only hops
 // are unregistered is classified DIRECT, because an unrecognised fiat token

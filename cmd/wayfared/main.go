@@ -158,7 +158,6 @@ func main() {
 			Engine:       engine,
 			Store:        store,
 			Timeout:      *timeout,
-			ErrorCode:    func(error) string { return "internal_error" },
 			HistoryFirst: *histFirst,
 			Checks:       &checks.Runner{HorizonURL: *horizon},
 		}
