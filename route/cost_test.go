@@ -15,6 +15,59 @@ import (
 func testUSDC() asset.Asset { return asset.USDC() }
 func testNGNC() asset.Asset { return asset.NGNC() }
 
+// TestDecomposeExpectedFailureCostUndetermined pins the one cost component
+// that must never acquire a number.
+//
+// Expected failure cost is a layer 3 quantity: it needs observed failures to
+// estimate, and none have been collected. Reporting it as zero would state
+// that a corridor never fails, which is a much stronger claim than "we do not
+// know" and the opposite of what the data supports.
+//
+// So it stays undetermined, and it carries a reason saying why — an unexplained
+// blank invites a reader to assume the cost is negligible rather than unmeasured.
+func TestDecomposeExpectedFailureCostUndetermined(t *testing.T) {
+	q := Quote{
+		Kind:          KindDEX,
+		Description:   "USDC -> XLM -> NGNC",
+		Source:        "stellar-dex",
+		SendAsset:     testUSDC(),
+		SendAmount:    decimal.NewFromInt(100),
+		ReceiveAsset:  testNGNC(),
+		ReceiveAmount: decimal.RequireFromString("112800.51"),
+		EffectiveRate: decimal.RequireFromString("1128.0051"),
+		ReferenceMid:  decimal.RequireFromString("1500"),
+		LossPct:       decimal.RequireFromString("24.80"),
+		LossAmount:    decimal.RequireFromString("37199.49"),
+		Verdict:       VerdictUnusable,
+	}
+
+	d := Decompose(q, decimal.RequireFromString("1500"))
+
+	var found bool
+	for _, p := range d.Parts {
+		if p.Component != CostExpectedFailure {
+			continue
+		}
+		found = true
+
+		if p.Determined {
+			t.Error("expected failure cost reported as determined; it needs observed " +
+				"failures to estimate, and none have been collected")
+		}
+		if !p.Amount.IsZero() {
+			t.Errorf("undetermined expected failure cost carries amount %s; an "+
+				"undetermined component must hold no figure at all", p.Amount)
+		}
+		if strings.TrimSpace(p.Reason) == "" {
+			t.Error("undetermined expected failure cost carries no reason; an " +
+				"unexplained blank invites a reader to assume the cost is negligible")
+		}
+	}
+	if !found {
+		t.Fatal("decomposition omits the expected-failure component entirely")
+	}
+}
+
 func TestCostDecomposeSplitsCorrectly(t *testing.T) {
 	q := Quote{
 		Kind:          KindDEX,
@@ -97,6 +150,12 @@ func TestCostDecomposeSplitsCorrectly(t *testing.T) {
 	}
 }
 
+// TestCostDecomposeZeroLoss covers a route that achieves mid exactly.
+//
+// Zero loss is a real measurement, not a missing one: the route was priced and
+// found to cost nothing against the benchmark. It must therefore report a
+// determined zero rather than an undetermined component, which is the
+// distinction the rest of this file exists to protect.
 func TestCostDecomposeZeroLoss(t *testing.T) {
 	q := Quote{
 		Kind:          KindDEX,

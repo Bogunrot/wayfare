@@ -21,6 +21,16 @@ type fakeProvider struct {
 
 func (f *fakeProvider) Name() string { return f.name }
 
+// fakeProvider answers with a fixed rate or a fixed error.
+type fakeProvider struct {
+	name string
+	mid  string
+	asOf time.Time
+	err  error
+}
+
+func (f *fakeProvider) Name() string { return f.name }
+
 func (f *fakeProvider) Rate(_ context.Context, base, quote string) (Rate, error) {
 	if f.err != nil {
 		return Rate{}, f.err
@@ -360,6 +370,7 @@ func TestStaleSelectsFresherFeedRegardlessOfOrder(t *testing.T) {
 		{"fresh primary", fresh, stale},
 		{"fresh secondary", stale, fresh},
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			r := rateOf(t, &Cross{Primary: tc.primary, Secondary: tc.secondary})

@@ -412,6 +412,9 @@ const (
 	codeUpstreamTimeout     = "upstream_timeout"
 	codeInvalidQuery        = "invalid_query"
 	codeInternalError       = "internal_error"
+	codeInvalidLimit        = "invalid_limit"
+	codeStoreRead           = "store_read_error"
+	codeDivergenceHistory   = "divergence_history_error"
 )
 
 // checkParams rejects any query parameter outside the endpoint's allow-list.

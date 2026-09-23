@@ -237,6 +237,10 @@ func TestUnknownQueryParamsAreRejected(t *testing.T) {
 			path:    "/api/corridor?tp=NGNC",
 			wantMsg: `"tp"`,
 		},
+		// "pretty" is deliberately NOT listed here: it is a supported
+		// parameter with its own test (TestPrettyOptInIndents). An earlier
+		// merge left both a test asserting it returns 200 and this one
+		// asserting it returns 400, which cannot both hold.
 		"corridor extra param": {
 			// Deliberately not "pretty": that is a real, supported parameter
 			// (the opt-in for indented JSON). Strictness rejects a parameter

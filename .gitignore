@@ -8,6 +8,7 @@
 /wayfare
 /wayfared
 /ladder
+/hop-analysis
 
 # Test and coverage artifacts
 *.out

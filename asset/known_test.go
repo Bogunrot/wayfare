@@ -164,10 +164,18 @@ func TestRegistryCompleteness(t *testing.T) {
 	}
 }
 
+// TestValidateEntryRequiresVerificationDate pins the field that makes a
+// registry entry auditable.
+//
+// An entry without a verification date records that somebody believed the
+// issuer, not that anybody checked it. Issuers rotate accounts, so an
+// undated claim cannot be re-verified or expired — which is why this is a
+// required field rather than a nice-to-have.
 func TestValidateEntryRequiresVerificationDate(t *testing.T) {
 	e := Entry{
 		Code:       "TEST",
 		Issuer:     "GBTEST",
+		Peg:        "TST",
 		Status:     "live",
 		SourceURL:  "https://example.com/.well-known/stellar.toml",
 		HomeDomain: "example.com",
