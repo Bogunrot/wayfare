@@ -343,7 +343,9 @@ rounding error the engine avoids internally. There is a test at the boundary.
 ### Snapshot format — version 1
 
 Recorded upstream bytes, verified by hash on load. A replayer **must refuse a
-version it does not know.** Full spec: **[docs/snapshot-format.md](docs/snapshot-format.md)**
+version it does not know.** Full spec: **[docs/snapshot-format.md](docs/snapshot-format.md)**.
+Workflow guide: **[docs/snapshot-record-replay.md](docs/snapshot-record-replay.md)**.
+Offline testing requirement and CI network isolation: **[docs/offline-testing.md](docs/offline-testing.md)**.
 
 ### Run record — version 3
 

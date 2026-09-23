@@ -431,7 +431,9 @@ unshare -rn bash -c 'ip link set lo up 2>/dev/null; go test -count=1 ./...'
 ```
 
 This proves structurally that every test runs from recorded bytes. A test
-that reaches out fails instead of passing intermittently.
+that reaches out fails instead of passing intermittently. See
+[docs/offline-testing.md](offline-testing.md) for full details on the offline
+requirement, network blackout mechanics, and diagnosing failures.
 
 ### The full CI matrix
 
@@ -514,6 +516,8 @@ The recorder captured zero interactions. This happens when:
 
 - [docs/snapshot-format.md](snapshot-format.md) — the format specification
   (nine rules, layout, manifest structure)
+- [docs/offline-testing.md](offline-testing.md) — offline testing requirement
+  and CI network isolation
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — project invariants and conventions
 - [docs/corridor-measurements.md](corridor-measurements.md) — published
   figures these snapshots make testable

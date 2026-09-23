@@ -1133,7 +1133,8 @@ chain that will not verify — the four recurring stumbles.
 
 **#171 — Document the offline test requirement** *(filed: [#231](https://github.com/Wayfare-labs/wayfare/issues/231))*
 CI runs the suite with no route out; a contributor whose test reaches the
-network will fail in CI without understanding why.
+network will fail in CI without understanding why. See
+[docs/offline-testing.md](offline-testing.md).
 `V1` `area:docs` `good first issue` `difficulty:easy` `ready`
 
 **#172 — Explain the snapshot record-and-replay workflow end to end** *(filed: [#232](https://github.com/Wayfare-labs/wayfare/issues/232))*

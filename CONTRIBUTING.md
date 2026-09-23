@@ -32,6 +32,7 @@ make test     # tests
 make race     # tests with the race detector
 make cover    # coverage report -> coverage.html
 make lint     # golangci-lint
+make offline-test # tests inside an isolated network namespace (see docs/offline-testing.md)
 make run      # measure USDC -> NGNC against live mainnet
 ```
 
@@ -131,11 +132,13 @@ Contributors have to be able to trust these:
 ## Before opening a pull request
 
 ```bash
-make fmt vet test race lint
+make fmt vet test race lint offline-test
 ```
 
-CI runs `gofmt`, `go vet`, `go test -race`, `go build`, and `golangci-lint`.
-All must pass.
+CI runs `gofmt`, `go vet`, `go test -race`, `go build`, `golangci-lint`, and
+`offline-tests` (running the full test suite in an isolated network blackout
+namespace). All must pass without outbound network access. See
+[docs/offline-testing.md](docs/offline-testing.md).
 
 Changes to `server/index.html` are only covered by the source-text assertions in
 `go test`, which cannot tell you how a panel renders. Check them in a browser:
