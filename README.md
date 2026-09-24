@@ -161,7 +161,7 @@ LAYER 4 — VERIFIABLE OUTPUT                 [not built — needs a trust model
 
 Layers 3 and 4 have **no packages and no stubs**, deliberately. Speculative
 structure is worse than none: an empty package invites code that has no inputs
-yet.
+yet. **[ADR 003](docs/adr/003-why-layers-3-and-4-have-no-packages.md)**
 
 ### How the pieces fit
 
@@ -192,10 +192,12 @@ Two things about this shape are deliberate.
 `server`, and `wayfared -serve=false` measures with no HTTP at all. A monitor
 that only measures while somebody has a page open would leave holes in its
 history exactly where nobody was looking.
+**[ADR 005](docs/adr/005-why-the-scheduler-does-not-depend-on-the-server.md)**
 
 **Checks sit downstream of the measurement.** They observe the counterparties a
 corridor depends on and are attached to the result; nothing they report can
 alter an integrity state or a verdict. See the composition rule below.
+**[ADR 002](docs/adr/002-why-checks-never-move-the-headline.md)**
 
 Significant architectural decisions are recorded as ADRs in
 **[docs/adr/](docs/adr/)**.
@@ -339,6 +341,7 @@ guessed at.
 Every amount, rate and percentage is a **decimal string**, never a JSON number.
 A JSON number invites a client to parse it into a `float64`, reintroducing the
 rounding error the engine avoids internally. There is a test at the boundary.
+**[ADR 006](docs/adr/006-why-money-crosses-the-wire-as-decimal-strings.md)**
 
 ### Snapshot format — version 1
 
