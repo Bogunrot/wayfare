@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/Wayfare-labs/wayfare/runstore"
 )
 
 // ---------------------------------------------------------------------------
@@ -147,10 +151,47 @@ func TestVerifyStoreEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("openStore: %v", err)
 	}
-	// verifyStore needs a *FileStore, but openStore may return a Nop.
-	// When dir is non-empty and writable, it should return a FileStore.
 	code := verifyStore(store, logger)
 	if code != 0 {
 		t.Errorf("verifyStore on empty store = %d, want 0", code)
+	}
+}
+
+func TestVerifyStoreReadOnlyBackend(t *testing.T) {
+	dir := t.TempDir()
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
+
+	rec := &runstore.Record{
+		Version:      runstore.Version,
+		Seq:          1,
+		RecordedAt:   time.Unix(0, 0).UTC(),
+		Corridor:     "USDC-NGNC",
+		Integrity:    "good",
+		DependsOn:    []string{},
+		PrevHash:     runstore.GenesisPrevHash,
+		Finding:      "ok",
+		Rungs:        []runstore.Rung{},
+		FloorLossPct: "0",
+		FloorSize:    "1",
+		WorstLossPct: "0",
+		WorstSize:    "1",
+	}
+	if err := rec.Seal(); err != nil {
+		t.Fatalf("Seal: %v", err)
+	}
+	payload, err := json.Marshal(rec)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "USDC-NGNC.ndjson"), append(payload, '\n'), 0o644); err != nil {
+		t.Fatalf("write record: %v", err)
+	}
+
+	store, err := runstore.OpenFS(os.DirFS(dir), ".")
+	if err != nil {
+		t.Fatalf("OpenFS: %v", err)
+	}
+	if code := verifyStore(store, logger); code != 0 {
+		t.Fatalf("verifyStore on read-only backend = %d, want 0", code)
 	}
 }
